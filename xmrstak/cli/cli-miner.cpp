@@ -71,9 +71,6 @@ void help()
 #ifdef _WIN32
 	cout<<"  --noUAC               disable the UAC dialog"<<endl;
 #endif
-#if (!defined(CONF_NO_AEON)) && (!defined(CONF_NO_MONERO))
-	cout<<"  --currency NAME       currency to mine: monero or aeon"<<endl;
-#endif
 #ifndef CONF_NO_CPU
 	cout<<"  --noCPU               disable the CPU miner backend"<<endl;
 	cout<<"  --cpu FILE            CPU backend miner config file"<<endl;
@@ -89,10 +86,9 @@ void help()
 	cout<<" "<<endl;
 	cout<<"The following options can be used for automatic start without a guided config,"<<endl;
 	cout<<"If config exists then this pool will be top priority."<<endl;
-	cout<<"  -o, --url URL         pool url and port, e.g. pool.usxmrpool.com:3333"<<endl;
-	cout<<"  -O, --tls-url URL     TLS pool url and port, e.g. pool.usxmrpool.com:10443"<<endl;
-	cout<<"  -u, --user USERNAME   pool user name or wallet address"<<endl;
-	cout<<"  -p, --pass PASSWD     pool password, in the most cases x or empty \"\""<<endl;
+	cout<<"  -o, --url URL         pool url and port, e.g. nl.etnpool.net:7777"<<endl;
+	cout<<"  -u, --user WALLET   pool user name or wallet address"<<endl;
+	cout<<"  -p, --pass PASSWORD     pool password, in the most cases x or empty \"\""<<endl;
 	cout<<"  --use-nicehash        the pool should run in nicehash mode"<<endl;
 	cout<<" \n"<<endl;
 #ifdef _WIN32
@@ -102,7 +98,6 @@ void help()
 	cout<<" \n"<<endl;
 #endif
 	cout<< "Version: " << get_version_str_short() << endl;
-	cout<<"Brought to by fireice_uk and psychocrypt under GPLv3."<<endl;
 }
 
 bool read_yes_no(const char* str)
@@ -126,52 +121,18 @@ inline const char* bool_to_str(bool v)
 
 std::string get_multipool_entry(bool& final)
 {
-	std::cout<<std::endl<<"- Next Pool:"<<std::endl<<std::endl;
-
-	std::string pool;
-	if(xmrstak::params::inst().currency == "monero")
-		std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
-	else
-		std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
-	std::cin >> pool;
-
 	std::string userName;
-	std::cout<<"- Username (wallet address or pool login):"<<std::endl;
+	std::cout<<"- Wallet:"<<std::endl;
 	std::cin >> userName;
 
-	std::string passwd;
-	std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-	std::cout<<"- Password (mostly empty or x):"<<std::endl;
-	getline(std::cin, passwd);
-
-#ifdef CONF_NO_TLS
-	bool tls = false;
-#else
-	bool tls = read_yes_no("- Does this pool port support TLS/SSL? Use no if unknown. (y/N)");
-#endif
-	bool nicehash = read_yes_no("- Do you want to use nicehash on this pool? (y/n)");
-
-	int64_t pool_weight;
-	std::cout << "- Please enter a weight for this pool: "<<std::endl;
-	while(!(std::cin >> pool_weight) || pool_weight <= 0)
-	{
-		std::cin.clear();
-		std::cin.ignore(INT_MAX, '\n');
-		std::cout << "Invalid weight.  Try 1, 10, 100, etc:" << std::endl;
-	}
-
-	final = !read_yes_no("- Do you want to add another pool? (y/n)");
-
-	return "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"" + 
-		passwd + "\", \"use_nicehash\" : " + bool_to_str(nicehash) + ", \"use_tls\" : " + bool_to_str(tls) + 
-		", \"tls_fingerprint\" : \"\", \"pool_weight\" : " + std::to_string(pool_weight) + " },\n";
+	return "\t{\"pool_address\" : \"nl.etnpool.net:7777\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"x\", \"use_nicehash\" : false, \"use_tls\" : false" + 
+		", \"tls_fingerprint\" : \"\", \"pool_weight\" : 1 },\n";
 }
 
 inline void prompt_once(bool& prompted)
 {
 	if(!prompted)
 	{
-		std::cout<<"Please enter:"<<std::endl;
 		prompted = true;
 	}
 }
@@ -189,125 +150,38 @@ void do_guided_config()
 	configTpl.set(std::string(tpl));
 	bool prompted = false;
 	
-	auto& currency = params::inst().currency;
-	if(currency.empty())
-	{
-		prompt_once(prompted);
-
-		std::string tmp;
-#if defined(CONF_NO_AEON)
-		tmp = "monero";
-#elif defined(CONF_NO_MONERO)
-		tmp = "aeon";
-#endif
-		while(tmp != "monero" && tmp != "aeon")
-		{
-			std::cout<<"- Currency: 'monero' or 'aeon'"<<std::endl;
-			std::cin >> tmp;
-			std::transform(tmp.begin(), tmp.end(), tmp.begin(), ::tolower);
-		} 
-		currency = tmp;
-	}
-
-	auto& pool = params::inst().poolURL;
-	bool userSetPool = true;
-	if(pool.empty())
-	{
-		prompt_once(prompted);
-
-		userSetPool = false;
-		if(currency == "monero")
-			std::cout<<"- Pool address: e.g. pool.usxmrpool.com:3333"<<std::endl;
-		else
-			std::cout<<"- Pool address: e.g. mine.aeon-pool.com:5555"<<std::endl;
-		std::cin >> pool;
-	}
-
+	set_colour(K_CYAN);
+	printer::inst()->print_str("         __                          __             __ \n");
+	printer::inst()->print_str("   ___  / /_____  ____  ____  ____  / / ____  ___  / /_\n");
+	printer::inst()->print_str("  / _ \\/ __/ __ \\/ __ \\/ __ \\/ __ \\/ / / __ \\/ _ \\/ __/\n");
+	printer::inst()->print_str(" /  __/ /_/ / / / /_/ / /_/ / /_/ / / / / / /  __/ /_  \n");
+	printer::inst()->print_str(" \\___/\\__/_/ /_/ .___/\\____/\\____/_(_)_/ /_/\\___/\\__/  \n");
+	printer::inst()->print_str("              /_/      ");
+	reset_colour();
+	set_colour(K_WHITE);
+	printer::inst()->print_str("ELECTRONEUM POOL FOR WINNERS\n\n");
+	printer::inst()->print_str("Pool: nl.etnpool.net:7777");
+	reset_colour();
+	set_colour(K_YELLOW);
+	printer::inst()->print_str(" (high-end) computers\n\n");
+	reset_colour();
+	
 	auto& userName = params::inst().poolUsername;
 	if(userName.empty())
 	{
 		prompt_once(prompted);
 
-		std::cout<<"- Username (wallet address or pool login):"<<std::endl;
+		std::cout<<"- Please enter your ETN wallet address (public address):"<<std::endl;
 		std::cin >> userName;
 	}
 
-	auto& passwd = params::inst().poolPasswd;
-	if(passwd.empty() && !params::inst().userSetPwd)
-	{
-		prompt_once(prompted);
-
-		// clear everything from stdin to allow an empty password
-		std::cin.clear(); std::cin.ignore(INT_MAX,'\n');
-		std::cout<<"- Password (mostly empty or x):"<<std::endl;
-		getline(std::cin, passwd);
-	}
-
-	bool tls;
-#ifdef CONF_NO_TLS
-	tls = false;
-#else
-	if(!userSetPool)
-	{
-		prompt_once(prompted);
-		tls = read_yes_no("- Does this pool port support TLS/SSL? Use no if unknown. (y/N)");
-	}
-	else
-		tls = params::inst().poolUseTls;
-#endif
-
-	bool nicehash;
-	if(!userSetPool)
-	{
-		prompt_once(prompted);
-		nicehash = read_yes_no("- Do you want to use nicehash on this pool? (y/n)");
-	}
-	else
-		nicehash = params::inst().nicehashMode;
-
-	bool multipool;
-	if(!userSetPool)
-		multipool = read_yes_no("- Do you want to use multiple pools? (y/n)");
-	else
-		multipool = false;
-
-	int64_t pool_weight;
-	if(multipool)
-	{
-		std::cout << "Pool weight is a number telling the miner how important the pool is." << std::endl;
-		std::cout << "Miner will mine mostly at the pool with the highest weight, unless the pool fails." << std::endl;
-		std::cout << "Weight must be an integer larger than 0." << std::endl;
-		std::cout << "- Please enter a weight for this pool: "<<std::endl;
-		
-		while(!(std::cin >> pool_weight) || pool_weight <= 0)
-		{
-			std::cin.clear();
-			std::cin.ignore(INT_MAX, '\n');
-			std::cout << "Invalid weight.  Try 1, 10, 100, etc:" << std::endl;
-		}
-	}
-	else
-		pool_weight = 1;
-
 	std::string pool_table;
-	pool_table += "\t{\"pool_address\" : \"" + pool +"\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"" + 
-		passwd + "\", \"use_nicehash\" : " + bool_to_str(nicehash) + ", \"use_tls\" : " + bool_to_str(tls) + 
-		", \"tls_fingerprint\" : \"\", \"pool_weight\" : " + std::to_string(pool_weight) + " },\n";
-
-	if(multipool)
-	{
-		bool final;
-		do
-		{
-			pool_table += get_multipool_entry(final);
-		}
-		while(!final);
-	}
+	pool_table += "\t{\"pool_address\" : \"nl.etnpool.net:7777\", \"wallet_address\" : \"" + userName +  "\", \"pool_password\" : \"x\", \"use_nicehash\" : false, \"use_tls\" : false, \"tls_fingerprint\" : \"\", \"pool_weight\" : 1 },\n";
 
 	configTpl.replace("POOLCONF", pool_table);
-	configTpl.replace("CURRENCY", currency);
+	configTpl.replace("CURRENCY", "monero");
 	configTpl.write(params::inst().configFile);
-	std::cout<<"Configuration stored in file '"<<params::inst().configFile<<"'"<<std::endl;
+	printer::inst()->print_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
 }
 
 int main(int argc, char *argv[])
@@ -416,17 +290,6 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			params::inst().configFileNVIDIA = argv[i];
-		}
-		else if(opName.compare("--currency") == 0)
-		{
-			++i;
-			if( i >=argc )
-			{
-				printer::inst()->print_msg(L0, "No argument for parameter '--currency' given");
-				win_exit();
-				return 1;
-			}
-			params::inst().currency = argv[i];
 		}
 		else if(opName.compare("-o") == 0 || opName.compare("--url") == 0)
 		{
@@ -557,28 +420,23 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	printer::inst()->print_str("-------------------------------------------------------------------\n");
-	printer::inst()->print_str(get_version_str_short().c_str());
-	printer::inst()->print_str("\n-------------------------------------------------------------------\n\n");
-	printer::inst()->print_str("Brought to you by fireice_uk and psychocrypt under GPLv3.\n");
-	printer::inst()->print_str("Based on CPU mining code by wolf9466 (heavily optimized by fireice_uk).\n");
-#ifndef CONF_NO_CUDA
-	printer::inst()->print_str("Based on NVIDIA mining code by KlausT and psychocrypt.\n");
-#endif
-#ifndef CONF_NO_OPENCL
-	printer::inst()->print_str("Based on OpenCL mining code by wolf9466.\n");
-#endif
-	printer::inst()->print_str("Colorscheme by ");
-	set_colour(K_RED);
-	printer::inst()->print_str("po");
-	set_colour(K_WHITE);
-	printer::inst()->print_str("Ngz");
-	set_colour(K_BLUE);
-	printer::inst()->print_str("0r");
+	set_colour(K_CYAN);
+	printer::inst()->print_str("         __                          __             __ \n");
+	printer::inst()->print_str("   ___  / /_____  ____  ____  ____  / / ____  ___  / /_\n");
+	printer::inst()->print_str("  / _ \\/ __/ __ \\/ __ \\/ __ \\/ __ \\/ / / __ \\/ _ \\/ __/\n");
+	printer::inst()->print_str(" /  __/ /_/ / / / /_/ / /_/ / /_/ / / / / / /  __/ /_  \n");
+	printer::inst()->print_str(" \\___/\\__/_/ /_/ .___/\\____/\\____/_(_)_/ /_/\\___/\\__/  \n");
+	printer::inst()->print_str("              /_/      ");
 	reset_colour();
-	printer::inst()->print_str(" <-- I'm dutch, it's close. Admit it. Please? Ah well you probally never heard of us.\n\n");
-	printer::inst()->print_str("-------------------------------------------------------------------\n");
 	set_colour(K_WHITE);
+	printer::inst()->print_str("ELECTRONEUM POOL FOR WINNERS\n\n");
+	printer::inst()->print_str("Pool: nl.etnpool.net:7777");
+	reset_colour();
+	set_colour(K_YELLOW);
+	printer::inst()->print_str(" (high-end) computers\n\n");
+	reset_colour();
+	set_colour(K_WHITE);
+	printer::inst()->print_str("-------------------------------------------------------------------\n\n");
 	printer::inst()->print_str("You can use following keys to display reports:\n");
 	printer::inst()->print_str("'h' - hashrate\n");
 	printer::inst()->print_str("'r' - results\n");
